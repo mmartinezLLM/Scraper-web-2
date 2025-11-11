@@ -181,17 +181,11 @@ class SEOSpiderGUI:
                 if hasattr(self, 'analyze_button'):
                     self.analyze_button.config(text='Iniciar Análisis Completo', command=self.start_full_analysis)
                     self.analyze_button.grid()
-                # Ocultar el botón específico si existe
-                if hasattr(self, 'specific_analyze_button'):
-                    self.specific_analyze_button.grid_remove()
             else:
                 # En la pestaña de URLs específicas reutilizamos el mismo botón
                 if hasattr(self, 'analyze_button'):
                     self.analyze_button.config(text='Analizar URLs Específicas', command=self.start_specific_analysis)
                     self.analyze_button.grid()
-                # Ocultar el botón específico individual para evitar duplicados
-                if hasattr(self, 'specific_analyze_button'):
-                    self.specific_analyze_button.grid_remove()
 
             # El log siempre visible abajo
             if hasattr(self, 'log_frame'):
@@ -224,19 +218,12 @@ class SEOSpiderGUI:
         config_frame = ttk.Frame(self.full_analysis_frame)
         config_frame.grid(row=2, column=0, sticky="ew", pady=10, padx=20)
         config_frame.columnconfigure(1, weight=0) # No expandir spinbox
-        config_frame.columnconfigure(3, weight=0) # No expandir spinbox
 
-        ttk.Label(config_frame, text="Máx. páginas (1 = sin límite):").grid(row=0, column=0, sticky="w", padx=(0, 5))
-        self.max_pages_var = tk.StringVar(value="10")
-        max_pages_spin = ttk.Spinbox(config_frame, from_=1, to=10000,
-                                    textvariable=self.max_pages_var, width=8)
-        max_pages_spin.grid(row=0, column=1, sticky="w", padx=(0, 20))
-
-        ttk.Label(config_frame, text="Delay (seg):").grid(row=0, column=2, sticky="w", padx=(0, 5))
+        ttk.Label(config_frame, text="Delay entre peticiones (seg):").grid(row=0, column=0, sticky="w", padx=(0, 5))
         self.delay_var = tk.StringVar(value="1")
         delay_spin = ttk.Spinbox(config_frame, from_=0.1, to=10, increment=0.1,
                                 textvariable=self.delay_var, width=8)
-        delay_spin.grid(row=0, column=3, sticky="w")
+        delay_spin.grid(row=0, column=1, sticky="w")
 
         # Frame para opciones
         options_frame = ttk.Frame(self.full_analysis_frame)
@@ -304,7 +291,7 @@ class SEOSpiderGUI:
         config_frame.columnconfigure(1, weight=1)
         
         # Delay
-        ttk.Label(config_frame, text="Delay (seg):").grid(row=0, column=0, sticky="w", padx=(0, 5))
+        ttk.Label(config_frame, text="Delay entre peticiones (seg):").grid(row=0, column=0, sticky="w", padx=(0, 5))
         self.specific_delay_var = tk.StringVar(value="1")
         specific_delay_spin = ttk.Spinbox(config_frame, from_=0.1, to=10, increment=0.1,
                                          textvariable=self.specific_delay_var, width=8)
@@ -338,13 +325,7 @@ class SEOSpiderGUI:
         button_container = ttk.Frame(action_frame)
         button_container.pack()
 
-        # Botones
-        self.specific_analyze_button = ttk.Button(button_container,
-                                                text="Analizar URLs Específicas",
-                                                command=self.start_specific_analysis,
-                                                width=25)
-        self.specific_analyze_button.pack(side=tk.LEFT, padx=5)
-
+        # Solo botón de Limpiar URLs (el botón de análisis se maneja desde analyze_button principal)
         self.clear_urls_button = ttk.Button(button_container,
                                           text="Limpiar URLs",
                                           command=self.clear_specific_urls,
@@ -493,12 +474,13 @@ class SEOSpiderGUI:
             self.url_entry.insert(0, url)
         
         try:
-            max_pages = int(self.max_pages_var.get())
             delay = float(self.delay_var.get())
         except ValueError:
-            messagebox.showerror("Error", "Por favor, ingresa valores válidos para páginas y delay")
+            messagebox.showerror("Error", "Por favor, ingresa un valor válido para delay")
             return
         
+        # Usar max_pages=1 (sin límite) por defecto para análisis completo
+        max_pages = 1
         self.start_analysis(url, max_pages, delay)
     
     def start_specific_analysis(self):
@@ -536,7 +518,6 @@ class SEOSpiderGUI:
         
         self.is_analyzing = True
         self.analyze_button.config(state=tk.DISABLED)
-        self.specific_analyze_button.config(state=tk.DISABLED)
         self.stop_button.config(state=tk.NORMAL)
         self.export_button.config(state=tk.DISABLED)
         
@@ -552,7 +533,7 @@ class SEOSpiderGUI:
         if max_pages == 1:
             # Modo sin límite: iniciar con un valor base razonable
             self.progress['maximum'] = 100  # Valor inicial que se ajustará dinámicamente
-            self.progress_label.config(text="🔄 Preparando análisis sin límite de páginas...")
+            self.progress_label.config(text="🔄 Preparando búsqueda completa del dominio (sin límite)...")
         else:
             # Modo con límite: usar el número máximo de páginas
             self.progress['maximum'] = max_pages
@@ -683,7 +664,6 @@ class SEOSpiderGUI:
         except Exception:
             pass
         self.analyze_button.config(state=tk.NORMAL)
-        self.specific_analyze_button.config(state=tk.NORMAL)
         self.stop_button.config(state=tk.DISABLED)
         self.export_button.config(state=tk.NORMAL)
         try:
@@ -772,6 +752,7 @@ class SEOSpiderGUI:
                             'Imágenes encontradas',
                             'Enlaces analizados',
                             'Enlaces rotos',
+                           
                             'URLs redirigidas',
                             'Estado',
                             'Fecha snapshot'
@@ -818,7 +799,6 @@ class SEOSpiderGUI:
             self.stop_button.config(text="Reanudar Análisis", state=tk.NORMAL)
             self.export_button.config(state=tk.NORMAL)
             self.analyze_button.config(state=tk.NORMAL)
-            self.specific_analyze_button.config(state=tk.NORMAL)
 
             # Guardar snapshot
             snapshot_path = self.save_snapshot()
@@ -845,7 +825,6 @@ class SEOSpiderGUI:
             self.is_analyzing = False
             self.stop_button.config(text="Reanudar Análisis", state=tk.NORMAL)
             self.analyze_button.config(state=tk.NORMAL)
-            self.specific_analyze_button.config(state=tk.NORMAL)
 
     def resume_analysis(self):
         """Reanudar un análisis previamente detenido."""
@@ -866,7 +845,6 @@ class SEOSpiderGUI:
             self.stop_button.config(text="Detener Análisis", state=tk.NORMAL)
             self.export_button.config(state=tk.DISABLED)
             self.analyze_button.config(state=tk.DISABLED)
-            self.specific_analyze_button.config(state=tk.DISABLED)
             
             # Reanudar el crawler (restaurar estado desde el analyzer)
             resumed = False
@@ -881,7 +859,6 @@ class SEOSpiderGUI:
                 self.is_analyzing = False
                 self.stop_button.config(text="Reanudar Análisis", state=tk.NORMAL)
                 self.analyze_button.config(state=tk.NORMAL)
-                self.specific_analyze_button.config(state=tk.NORMAL)
                 return
             self.is_analyzing = True
             
@@ -905,7 +882,6 @@ class SEOSpiderGUI:
             self.is_analyzing = False
             self.stop_button.config(text="Reanudar Análisis", state=tk.NORMAL)
             self.analyze_button.config(state=tk.NORMAL)
-            self.specific_analyze_button.config(state=tk.NORMAL)
 
     def update_progress_animation(self):
         """Actualiza la animación de la barra de progreso"""
