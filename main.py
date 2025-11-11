@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
     # Crawl options
     parser.add_argument('--url', default='https://example.com', help='Base URL for crawling')
-    parser.add_argument('--max-pages', type=int, default=1, help='Max pages to crawl (1 = unlimited)')
+    parser.add_argument('--max-pages', type=int, default=1, help='Max pages to crawl (default: 1 = unlimited)')
     parser.add_argument('--delay', type=float, default=0.5, help='Delay between requests')
     parser.add_argument('--force', action='store_true', help='Force Playwright render for every page')
     parser.add_argument('--no-headless', action='store_false', dest='headless', help='Run Playwright with browser visible (default: headless)', default=True)
